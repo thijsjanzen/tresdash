@@ -1,11 +1,12 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
+
+checkPackages <- c("GUILDS", "nLTT", "STEPCAM",
+                   "junctions", "GenomeAdmixR", "nodeSub", "simRestore",
+                   "treestats", 
+                   "DAISIE", "DAISIEprep", "DAISIEmainland",
+                   "DAMOCLES", "SADISA",
+                   "DDD", "PBD", "secsse",
+                   "babette", "beautier", "tracerer", "mauricer", "mcbette")
+
 
 library(shiny)
 
@@ -17,31 +18,24 @@ require(curl)
 ui <- fluidPage(
 
     # Application title
-    titlePanel("TRES CRAN download dashboard"),
+    titlePanel("TRES CRAN downloads dashboard"),
 
     # Sidebar with a slider input for number of bins 
     # Show a plot of the generated distribution
     mainPanel(
       tabsetPanel(type = "tabs", id = "tabs1",
-                  tabPanel("Summary", value = 0,
-                           plotOutput("summaryPlot")),
                   tabPanel("Weekly", value = 1,
                            plotOutput("weekPlot")),
                   tabPanel("Monthly", value = 2,
                            plotOutput("monthPlot")),
-                  tabPanel("Long term", value = 3,
+                  tabPanel("Summary", value = 3,
+                           plotOutput("summaryPlot")),
+                  tabPanel("Long term", value = 4,
                            plotOutput("longPlot"))
       )
     )
 )
 
-checkPackages <- c("GUILDS", "nLTT", "STEPCAM",
-                   "junctions", "GenomeAdmixR", "nodeSub", "simRestore",
-                   "treestats", 
-                   "DAISIE", "DAISIEprep", "DAISIEmainland",
-                   "DAMOCLES", "SADISA",
-                   "DDD", "PBD", "secsse",
-                   "babette", "beautier", "tracerer", "mauricer")
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
@@ -106,31 +100,31 @@ server <- function(input, output) {
     vz <- long_data()
     p1 <- vz %>%
       filter(count > 0) %>%
-      ggplot(aes(x = reorder(package, count), y = count, fill = package)) +
+      ggplot(aes(x = reorder(package, count, FUN = median), y = count, fill = package)) +
       geom_boxplot() +
       theme_classic() +
       scale_y_log10() +
       theme(legend.position = "none") +
       scale_color_brewer(type = "qual", palette = 3) +
       ylab("Downloads per day") +
+      xlab("") +
       theme(axis.text.x = element_text(angle = 90))
     
     p2 <- vz %>%
       group_by(package) %>%
       summarise("total" = sum(count)) %>%
       arrange(desc(total)) %>%
-      ggplot(aes(x = reorder(package, total), y = total, fill = package)) +
+      ggplot(aes(x = reorder(package, total, decreasing = TRUE), y = total, fill = package)) +
       geom_bar(stat = "identity", ) + 
       theme(axis.text.x = element_text(angle = 90)) +
       ylab("Total number of downloads") +
-      xlab("")
-      scale_y_log10() + 
+      xlab("") +
       theme_classic() +
       theme(legend.position = "none") +
       theme(axis.text.x = element_text(angle = 90))
     
-    egg::ggarrange(p1, p2, nrow = 2)
-  })
+    egg::ggarrange(p1, p2)
+  }, bg = "transparent")
   
 }
 
