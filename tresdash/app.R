@@ -16,7 +16,7 @@ library(ggplot2)
 ui <- fluidPage(
 
     # Application title
-    titlePanel("CRAN download dashboard"),
+    titlePanel("TRES CRAN download dashboard"),
 
     # Sidebar with a slider input for number of bins 
     # Show a plot of the generated distribution
