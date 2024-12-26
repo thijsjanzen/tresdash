@@ -31,7 +31,9 @@ ui <- fluidPage(
                   tabPanel("Summary", value = 3,
                            plotOutput("summaryPlot")),
                   tabPanel("Long term", value = 4,
-                           plotOutput("longPlot"))
+                           plotOutput("longPlot")),
+                  tabPanel("per_package", value = 5,
+                           plotOutput("packagewise"))
       )
     )
 )
@@ -124,8 +126,54 @@ server <- function(input, output) {
       theme(axis.text.x = element_text(angle = 90))
     
     egg::ggarrange(p1, p2)
-  }, bg = "transparent")
+  })
+}
+
+get_plots <- function(package_name) {
+  local_data <- cran_downloads(packages = package_name, from = "2008-01-01", to = lubridate::today())
+  to_remove <- min(which(local_data$count > 0))
+  local_data <- local_data[-c(1:to_remove), ]
   
+  
+  local_data$year <- lubridate::year(local_data$date)
+  local_data$month <- lubridate::month(local_data$date)
+  
+  local_data$runsum <- cumsum(local_data$count)
+  local_data$lubri_date <- lubridate::as_date(local_data$date)
+  
+  p1 <- ggplot(local_data, aes(x = lubri_date, y = runsum)) +
+    geom_line() +
+    theme_classic() +
+    xlab("Time") +
+    ylab("Number of Downloads")
+  
+  p2 <- local_data %>%
+    group_by(year) %>%
+    summarise("total" = sum(count)) %>%
+    ggplot(aes(x = year, y = total)) +
+      geom_bar(stat = "identity") +
+    ylab("Number of Downloads per Year") +
+    xlab("Year") +
+    theme_classic()
+  
+  d4 <- local_data %>%
+    group_by(year, month) %>%
+    summarise("total" = sum(count)) %>%
+    mutate("number" = paste0(year, "-", month))
+  
+  d4$number[d4$month < 10] <- paste0(d4$year[d4$month < 10], "-0", d4$month[d4$month < 10])
+  
+  
+  p3 <- d4 %>%
+    ggplot(aes(x = number, y = total)) +
+    geom_bar(stat = "identity") +
+    ylab("Number of Downloads per Month") +
+    xlab("Year") +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 90, size = 5))
+  p3
+  
+  egg::ggarrange(p1, p2, p3, nrow = 2)
 }
 
 # Run the application 
