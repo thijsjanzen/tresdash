@@ -4,14 +4,17 @@ require(ggplot2)
 require(magrittr)
 require(ggnewscale)
 require(gridExtra)
+require(dplyr)
+
+library(plotly)
 
 library(shiny)
 require(curl)
 
 packages_thijs <- c("GUILDS", "nLTT", "STEPCAM", "junctions", "GenomeAdmixR", "nodeSub", "simRestore", "treestats")
 packages_rampal <- c("DDD", "PBD", "SADISA", "DAMOCLES", "secsse")
-packages_richel <- c("babette", "beautier", "tracerer", "mauricer", "mcbette")
-packages_luis <- c("DAISIE", "DAISIEprep", "DAISIEmainland")
+packages_richel <- c("babette", "beautier", "tracerer", "mauricer", "mcbette", "pirouette")
+packages_luis <- c("DAISIE", "DAISIEprep") #, "DAISIEmainland")
 
 
 
@@ -27,7 +30,7 @@ colors_luis   <- ggpubr::get_palette("BuGn", k = 2*length(packages_luis))[-c(1:l
 
 used_colors <- c(colors_thijs, colors_rampal, colors_richel, colors_luis)
 
-long_data <- cran_downloads(packages = checkPackages, from = "2010-01-01", to = lubridate::today())
+long_data <- cran_downloads(packages = checkPackages, from = "2010-01-01", to = lubridate::today() - 2)
 
 
 
@@ -99,7 +102,7 @@ server <- function(input, output) {
       ggplot() +
       theme_classic() +
       xlab("Date") +
-      ylab("Number of Downloads") +
+      ylab("Cumulative number of downloads") +
       ggtitle("All Time")
     
     use_thijs <- input$set_thijs == "Show"
@@ -112,7 +115,38 @@ server <- function(input, output) {
     if (use_luis) p1 <- add_group(p1, "Luis", colors_luis)
     if (use_richel) p1 <- add_group(p1, "Richel", colors_richel)
     
-    print(p1)
+    
+    long_data3 <- 
+      long_data %>%
+      group_by(package) %>%
+      mutate("total" = sum(count))
+    
+    if (!use_thijs) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_thijs))
+    }
+    if (!use_rampal) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_rampal))
+    }
+    if (!use_luis) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_luis))
+    }
+    if (!use_richel) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_richel))
+    }
+    
+    p2 <- ggplot(long_data3, aes(x = reorder(package, total), y = total)) +
+      geom_bar(stat = "identity") +
+      theme_minimal() +
+      coord_flip() +
+      xlab("") +
+      ylab("Total downloads") +
+      theme(axis.text.x = element_text(angle = 90))
+    
+    print(egg::ggarrange(p1, p2, nrow = 1, widths = c(0.7, 0.3)))
   })
   
   output$monthPlot <- renderPlot({
@@ -149,7 +183,7 @@ server <- function(input, output) {
       ggplot() +
       theme_classic() +
       xlab("Date") +
-      ylab("Number of Downloads") +
+      ylab("Cumulative number of downloads") +
       ggtitle("Last Month")
     
     use_thijs <- input$set_thijs == "Show"
@@ -162,7 +196,39 @@ server <- function(input, output) {
     if (use_luis) p1 <- add_group(p1, "Luis", colors_luis)
     if (use_richel) p1 <- add_group(p1, "Richel", colors_richel)
     
-    print(p1)
+    long_data3 <- 
+      long_data %>%
+      filter(date >= last_month) %>%
+      group_by(package) %>%
+      mutate("total" = sum(count))
+    
+    if (!use_thijs) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_thijs))
+    }
+    if (!use_rampal) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_rampal))
+    }
+    if (!use_luis) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_luis))
+    }
+    if (!use_richel) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_richel))
+    }
+    
+    p2 <- ggplot(long_data3, aes(x = reorder(package, total), y = total)) +
+      geom_bar(stat = "identity") +
+      theme_minimal() +
+      coord_flip() +
+      xlab("") +
+      ylab("Total downloads") +
+      theme(axis.text.x = element_text(angle = 90))
+    
+    
+    print(egg::ggarrange(p1, p2, nrow = 1, widths = c(0.7, 0.3)))
   })
   
   output$weekPlot <- renderPlot({
@@ -200,7 +266,7 @@ server <- function(input, output) {
       ggplot() +
       theme_classic() +
       xlab("Date") +
-      ylab("Number of Downloads") +
+      ylab("Cumulative number of downloads") +
       ggtitle("Last Week")
     
     use_thijs <- input$set_thijs == "Show"
@@ -213,7 +279,38 @@ server <- function(input, output) {
     if (use_luis) p1 <- add_group(p1, "Luis", colors_luis)
     if (use_richel) p1 <- add_group(p1, "Richel", colors_richel)
     
-    print(p1)
+    long_data3 <- 
+      long_data %>%
+      filter(date >= last_month) %>%
+      group_by(package) %>%
+      mutate("total" = sum(count))
+    
+    if (!use_thijs) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_thijs))
+    }
+    if (!use_rampal) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_rampal))
+    }
+    if (!use_luis) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_luis))
+    }
+    if (!use_richel) {
+      long_data3 <- long_data3 %>%
+        filter(!(package %in% packages_richel))
+    }
+    
+    p2 <- ggplot(long_data3, aes(x = reorder(package, total), y = total)) +
+      geom_bar(stat = "identity") +
+      theme_minimal() +
+      coord_flip() +
+      xlab("") +
+      ylab("Number of weekly downloads")
+    
+    
+    print(egg::ggarrange(p1, p2, nrow = 1, widths = c(0.7, 0.3)))
   })
   
   output$summaryPlot <- renderPlot({
