@@ -9,7 +9,7 @@ require(dplyr)
 library(plotly)
 
 library(shiny)
-require(curl)
+library(curl)
 
 packages_thijs <- c("GUILDS", "nLTT", "STEPCAM", "junctions", "GenomeAdmixR", "nodeSub", "simRestore", "treestats")
 packages_rampal <- c("DDD", "PBD", "SADISA", "DAMOCLES", "secsse")
@@ -54,9 +54,9 @@ ui <- fluidPage(
     
     mainPanel(
       tabsetPanel(type = "tabs", id = "tabs1",
-                  tabPanel("Weekly", value = 1,
+                  tabPanel("Last Week", value = 1,
                            plotOutput("weekPlot")),
-                  tabPanel("Monthly", value = 2,
+                  tabPanel("Last Month", value = 2,
                            plotOutput("monthPlot")),
                   tabPanel("All time", value = 3,
                            plotOutput("mainPlot")),
