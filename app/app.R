@@ -23,7 +23,7 @@ checkPackages <- c(packages_thijs, packages_rampal, packages_richel, packages_lu
 # starting_packages <- c("DDD", "secsse", "DAISIE", "treestats")
 starting_packages <- checkPackages
 
-colors_thijs <- ggpubr::get_palette("GnBu", k = length(packages_thijs))
+colors_thijs <- ggpubr::get_palette("GnBu", k = 2*length(packages_thijs))[-c(1:length(packages_thijs))]
 colors_rampal <- ggpubr::get_palette("RdPu", k = 2*length(packages_rampal))[-c(1:length(packages_rampal))]
 colors_richel <- ggpubr::get_palette("OrRd", k = 2*length(packages_richel))[-c(1:length(packages_richel))]
 colors_luis   <- ggpubr::get_palette("BuGn", k = 2*length(packages_luis))[-c(1:length(packages_luis))]
@@ -94,6 +94,18 @@ server <- function(input, output) {
         scale_color_manual(values = used_colors) +
         labs(color = group_name) +
         guides(col = guide_legend(ncol = 2))
+      
+      long_data3 <- long_data2 %>%
+        filter(group == group_name) %>%
+        mutate("yval" = max(cumsum)) %>%
+        filter(date == max(date))
+      
+      p1 <- p1 + 
+        geom_text(data = long_data3,
+                  aes(x = 0.3 + date, y = yval, col = package, label = package),
+                  hjust = 0) +
+        scale_color_manual(values = used_colors)
+      
       return(p1)
     }
     
@@ -138,6 +150,13 @@ server <- function(input, output) {
         filter(!(package %in% packages_richel))
     }
     
+    p1 <- p1 +
+      coord_cartesian(xlim = c(min(long_data3$date), 
+                               max(long_data3$date) + 10),
+                      clip = "off")
+    p1 <- p1 + 
+      theme(legend.position = "none")
+    
     p2 <- ggplot(long_data3, aes(x = reorder(package, total), y = total)) +
       geom_bar(stat = "identity") +
       theme_minimal() +
@@ -175,6 +194,18 @@ server <- function(input, output) {
         scale_color_manual(values = used_colors) +
         labs(color = group_name) +
         guides(col = guide_legend(ncol = 2))
+      
+      long_data3 <- long_data2 %>%
+        filter(group == group_name) %>%
+        mutate("yval" = max(cumsum)) %>%
+        filter(date == max(date))
+      
+      p1 <- p1 + 
+        geom_text(data = long_data3,
+                  aes(x = 0.3 + date, y = yval, col = package, label = package),
+                  hjust = 0) +
+        scale_color_manual(values = used_colors)
+      
       return(p1)
     }
     
@@ -219,6 +250,13 @@ server <- function(input, output) {
         filter(!(package %in% packages_richel))
     }
     
+    p1 <- p1 +
+      coord_cartesian(xlim = c(min(long_data3$date), 
+                               max(long_data3$date) + 5),
+                      clip = "off")
+    p1 <- p1 + 
+      theme(legend.position = "none")
+    
     p2 <- ggplot(long_data3, aes(x = reorder(package, total), y = total)) +
       geom_bar(stat = "identity") +
       theme_minimal() +
@@ -258,6 +296,18 @@ server <- function(input, output) {
         scale_color_manual(values = used_colors) +
         labs(color = group_name) +
         guides(col = guide_legend(ncol = 2))
+      
+      long_data3 <- long_data2 %>%
+        filter(group == group_name) %>%
+        mutate("yval" = max(cumsum)) %>%
+        filter(date == max(date))
+      
+      p1 <- p1 + 
+        geom_text(data = long_data3,
+                  aes(x = 0.3 + date, y = yval, col = package, label = package),
+                  hjust = 0) +
+        scale_color_manual(values = used_colors)
+      
       return(p1)
     }
     
@@ -308,6 +358,13 @@ server <- function(input, output) {
       coord_flip() +
       xlab("") +
       ylab("Number of weekly downloads")
+    
+    p1 <- p1 +
+      coord_cartesian(xlim = c(min(long_data3$date), 
+                               max(long_data3$date) + 1),
+                      clip = "off")
+    
+    p1 <- p1 + theme(legend.position = "none")
     
     
     print(egg::ggarrange(p1, p2, nrow = 1, widths = c(0.7, 0.3)))
