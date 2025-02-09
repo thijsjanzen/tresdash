@@ -36,13 +36,13 @@ long_data <- cran_downloads(packages = checkPackages, from = "2010-01-01", to = 
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-  
+
   # Application title
   titlePanel("TRES CRAN downloads dashboard"),
-  
-  # Sidebar with a slider input for number of bins 
+
+  # Sidebar with a slider input for number of bins
   # Show a plot of the generated distribution
-  
+
   sidebarLayout(
     sidebarPanel(
       radioButtons("set_thijs", "Thijs", choices = c("Show", "Hide"), selected = "Show", inline = TRUE),
@@ -51,7 +51,7 @@ ui <- fluidPage(
       radioButtons("set_richel", "Richel", choices = c("Show", "Hide"), selected = "Show", inline = TRUE),
       width = 2
     ),
-    
+
     mainPanel(
       tabsetPanel(type = "tabs", id = "tabs1",
                   tabPanel("Last Week", value = 1,
@@ -69,24 +69,24 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  
+
   output$mainPlot <- renderPlot({
-    
+
     long_data$group <- "Thijs"
     long_data$group[long_data$package %in% packages_rampal] <- "Rampal"
     long_data$group[long_data$package %in% packages_luis] <- "Luis"
     long_data$group[long_data$package %in% packages_richel] <- "Richel"
-    
-    long_data2 <- 
+
+    long_data2 <-
       long_data %>%
       group_by(package) %>%
       arrange(date) %>%
       mutate("cumsum" = cumsum(count))
-    
+
     add_group <- function(p1, group_name, used_colors) {
       p1 <- p1 +
         new_scale_color() +
-        
+
         geom_line(
           aes(x = date, y = cumsum, col = package),
           filter(long_data2, group == group_name),
@@ -94,45 +94,45 @@ server <- function(input, output) {
         scale_color_manual(values = used_colors) +
         labs(color = group_name) +
         guides(col = guide_legend(ncol = 2))
-      
+
       long_data3 <- long_data2 %>%
         filter(group == group_name) %>%
         mutate("yval" = max(cumsum)) %>%
         filter(date == max(date))
-      
-      p1 <- p1 + 
+
+      p1 <- p1 +
         geom_text(data = long_data3,
                   aes(x = 0.3 + date, y = yval, col = package, label = package),
                   hjust = 0) +
         scale_color_manual(values = used_colors)
-      
+
       return(p1)
     }
-    
-    
+
+
     p1 <- long_data2 %>%
       ggplot() +
       theme_classic() +
       xlab("Date") +
       ylab("Cumulative number of downloads") +
       ggtitle("All Time")
-    
+
     use_thijs <- input$set_thijs == "Show"
     use_rampal <- input$set_rampal == "Show"
     use_luis <- input$set_luis == "Show"
     use_richel <- input$set_richel == "Show"
-    
+
     if (use_thijs) p1 <- add_group(p1, "Thijs", colors_thijs)
     if (use_rampal) p1 <- add_group(p1, "Rampal", colors_rampal)
     if (use_luis) p1 <- add_group(p1, "Luis", colors_luis)
     if (use_richel) p1 <- add_group(p1, "Richel", colors_richel)
-    
-    
-    long_data3 <- 
+
+
+    long_data3 <-
       long_data %>%
       group_by(package) %>%
       mutate("total" = sum(count))
-    
+
     if (!use_thijs) {
       long_data3 <- long_data3 %>%
         filter(!(package %in% packages_thijs))
@@ -149,44 +149,45 @@ server <- function(input, output) {
       long_data3 <- long_data3 %>%
         filter(!(package %in% packages_richel))
     }
-    
+
     p1 <- p1 +
-      coord_cartesian(xlim = c(min(long_data3$date), 
+      coord_cartesian(xlim = c(min(long_data3$date),
                                max(long_data3$date) + 10),
                       clip = "off")
-    p1 <- p1 + 
+    p1 <- p1 +
       theme(legend.position = "none")
-    
-    p2 <- ggplot(long_data3, aes(x = reorder(package, total), y = total)) +
+
+    p2 <- long_data3 %>%
+      summarise("cumsum" = mean(total)) %>%
+      ggplot(aes(x = reorder(package, cumsum), y = cumsum)) +
       geom_bar(stat = "identity") +
       theme_minimal() +
       coord_flip() +
       xlab("") +
-      ylab("Total downloads") +
-      theme(axis.text.x = element_text(angle = 90))
-    
+      ylab("Total number of downloads")
+
     print(egg::ggarrange(p1, p2, nrow = 1, widths = c(0.7, 0.3)))
   })
-  
+
   output$monthPlot <- renderPlot({
-    
+
     long_data$group <- "Thijs"
     long_data$group[long_data$package %in% packages_rampal] <- "Rampal"
     long_data$group[long_data$package %in% packages_luis] <- "Luis"
     long_data$group[long_data$package %in% packages_richel] <- "Richel"
-    
+
     last_month <- lubridate::today() - 30
-    long_data2 <- 
+    long_data2 <-
       long_data %>%
       filter(date >= last_month) %>%
       group_by(package) %>%
       arrange(date) %>%
       mutate("cumsum" = cumsum(count))
-    
+
     add_group <- function(p1, group_name, used_colors) {
       p1 <- p1 +
         new_scale_color() +
-        
+
         geom_line(
           aes(x = date, y = cumsum, col = package),
           filter(long_data2, group == group_name),
@@ -194,45 +195,45 @@ server <- function(input, output) {
         scale_color_manual(values = used_colors) +
         labs(color = group_name) +
         guides(col = guide_legend(ncol = 2))
-      
+
       long_data3 <- long_data2 %>%
         filter(group == group_name) %>%
         mutate("yval" = max(cumsum)) %>%
         filter(date == max(date))
-      
-      p1 <- p1 + 
+
+      p1 <- p1 +
         geom_text(data = long_data3,
                   aes(x = 0.3 + date, y = yval, col = package, label = package),
                   hjust = 0) +
         scale_color_manual(values = used_colors)
-      
+
       return(p1)
     }
-    
-    
+
+
     p1 <- long_data2 %>%
       ggplot() +
       theme_classic() +
       xlab("Date") +
       ylab("Cumulative number of downloads") +
       ggtitle("Last Month")
-    
+
     use_thijs <- input$set_thijs == "Show"
     use_rampal <- input$set_rampal == "Show"
     use_luis <- input$set_luis == "Show"
     use_richel <- input$set_richel == "Show"
-    
+
     if (use_thijs) p1 <- add_group(p1, "Thijs", colors_thijs)
     if (use_rampal) p1 <- add_group(p1, "Rampal", colors_rampal)
     if (use_luis) p1 <- add_group(p1, "Luis", colors_luis)
     if (use_richel) p1 <- add_group(p1, "Richel", colors_richel)
-    
-    long_data3 <- 
+
+    long_data3 <-
       long_data %>%
       filter(date >= last_month) %>%
       group_by(package) %>%
       mutate("total" = sum(count))
-    
+
     if (!use_thijs) {
       long_data3 <- long_data3 %>%
         filter(!(package %in% packages_thijs))
@@ -249,46 +250,47 @@ server <- function(input, output) {
       long_data3 <- long_data3 %>%
         filter(!(package %in% packages_richel))
     }
-    
+
     p1 <- p1 +
-      coord_cartesian(xlim = c(min(long_data3$date), 
+      coord_cartesian(xlim = c(min(long_data3$date),
                                max(long_data3$date) + 5),
                       clip = "off")
-    p1 <- p1 + 
+    p1 <- p1 +
       theme(legend.position = "none")
-    
-    p2 <- ggplot(long_data3, aes(x = reorder(package, total), y = total)) +
+
+    p2 <- long_data3 %>%
+      summarise("cumsum" = mean(total)) %>%
+      ggplot(aes(x = reorder(package, cumsum), y = cumsum)) +
       geom_bar(stat = "identity") +
       theme_minimal() +
       coord_flip() +
       xlab("") +
-      ylab("Total downloads") +
-      theme(axis.text.x = element_text(angle = 90))
-    
-    
+      ylab("Number of downloads last month")
+
+
     print(egg::ggarrange(p1, p2, nrow = 1, widths = c(0.7, 0.3)))
   })
-  
+
   output$weekPlot <- renderPlot({
-    
+
     long_data$group <- "Thijs"
     long_data$group[long_data$package %in% packages_rampal] <- "Rampal"
     long_data$group[long_data$package %in% packages_luis] <- "Luis"
     long_data$group[long_data$package %in% packages_richel] <- "Richel"
-    
+
     last_month <- lubridate::today() - 7
-    
-    long_data2 <- 
+
+    long_data2 <-
       long_data %>%
       filter(date >= last_month) %>%
       group_by(package) %>%
       arrange(date) %>%
       mutate("cumsum" = cumsum(count))
-    
+
     add_group <- function(p1, group_name, used_colors) {
       p1 <- p1 +
         new_scale_color() +
-        
+
         geom_line(
           aes(x = date, y = cumsum, col = package),
           filter(long_data2, group == group_name),
@@ -296,45 +298,45 @@ server <- function(input, output) {
         scale_color_manual(values = used_colors) +
         labs(color = group_name) +
         guides(col = guide_legend(ncol = 2))
-      
+
       long_data3 <- long_data2 %>%
         filter(group == group_name) %>%
         mutate("yval" = max(cumsum)) %>%
         filter(date == max(date))
-      
-      p1 <- p1 + 
+
+      p1 <- p1 +
         geom_text(data = long_data3,
-                  aes(x = 0.3 + date, y = yval, col = package, label = package),
+                  aes(x = 0.1 + date, y = yval, col = package, label = package),
                   hjust = 0) +
         scale_color_manual(values = used_colors)
-      
+
       return(p1)
     }
-    
-    
+
+
     p1 <- long_data2 %>%
       ggplot() +
       theme_classic() +
       xlab("Date") +
       ylab("Cumulative number of downloads") +
       ggtitle("Last Week")
-    
+
     use_thijs <- input$set_thijs == "Show"
     use_rampal <- input$set_rampal == "Show"
     use_luis <- input$set_luis == "Show"
     use_richel <- input$set_richel == "Show"
-    
+
     if (use_thijs) p1 <- add_group(p1, "Thijs", colors_thijs)
     if (use_rampal) p1 <- add_group(p1, "Rampal", colors_rampal)
     if (use_luis) p1 <- add_group(p1, "Luis", colors_luis)
     if (use_richel) p1 <- add_group(p1, "Richel", colors_richel)
-    
-    long_data3 <- 
+
+    long_data3 <-
       long_data %>%
       filter(date >= last_month) %>%
       group_by(package) %>%
       mutate("total" = sum(count))
-    
+
     if (!use_thijs) {
       long_data3 <- long_data3 %>%
         filter(!(package %in% packages_thijs))
@@ -351,43 +353,45 @@ server <- function(input, output) {
       long_data3 <- long_data3 %>%
         filter(!(package %in% packages_richel))
     }
-    
-    p2 <- ggplot(long_data3, aes(x = reorder(package, total), y = total)) +
+
+    p2 <- long_data3 %>%
+      summarise("cumsum" = mean(total)) %>%
+      ggplot(aes(x = reorder(package, cumsum), y = cumsum)) +
       geom_bar(stat = "identity") +
       theme_minimal() +
       coord_flip() +
       xlab("") +
-      ylab("Number of weekly downloads")
-    
+      ylab("Number of downloads last week")
+
     p1 <- p1 +
-      coord_cartesian(xlim = c(min(long_data3$date), 
+      coord_cartesian(xlim = c(min(long_data3$date),
                                max(long_data3$date) + 1),
                       clip = "off")
-    
+
     p1 <- p1 + theme(legend.position = "none")
-    
-    
+
+
     print(egg::ggarrange(p1, p2, nrow = 1, widths = c(0.7, 0.3)))
   })
-  
+
   output$summaryPlot <- renderPlot({
     plots <- list()
-    
+
     add_plot <- function(group_used, colors_used) {
       long_data$group <- "Thijs"
       long_data$group[long_data$package %in% packages_rampal] <- "Rampal"
       long_data$group[long_data$package %in% packages_luis] <- "Luis"
       long_data$group[long_data$package %in% packages_richel] <- "Richel"
-      
+
       long_data2 <- long_data %>%
         filter(group == group_used) %>%
         filter(count > 0)
-      
+
       p1 <- long_data2 %>%
-        ggplot(aes(x = reorder(package, count, FUN = median), 
+        ggplot(aes(x = reorder(package, count, FUN = median),
                  y = count, fill = package)) +
         geom_boxplot() +
-        theme_classic() +
+        theme_minimal() +
         scale_y_log10() +
         scale_fill_manual(values = colors_used) +
         xlab("") +
@@ -397,21 +401,21 @@ server <- function(input, output) {
         ggtitle(group_used)
       return(p1)
     }
-    
+
     use_thijs <- input$set_thijs == "Show"
     use_rampal <- input$set_rampal == "Show"
     use_luis <- input$set_luis == "Show"
     use_richel <- input$set_richel == "Show"
-    
+
     if (use_thijs) plots[[length(plots) + 1]] <- add_plot("Thijs", colors_thijs)
     if (use_rampal) plots[[length(plots) + 1]] <- add_plot("Rampal", colors_rampal)
     if (use_luis) plots[[length(plots) + 1]] <- add_plot("Luis", colors_luis)
     if (use_richel) plots[[length(plots) + 1]] <- add_plot("Richel", colors_richel)
-    
+
     # grid.arrange(plots, ncol = 1)
     do.call("grid.arrange", c(plots, ncol = 2))
   })
 }
 
-# Run the application 
+# Run the application
 shinyApp(ui = ui, server = server)
