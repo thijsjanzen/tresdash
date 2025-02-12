@@ -1,38 +1,20 @@
-require(lubridate)
-require(cranlogs)
-require(ggplot2)
-require(magrittr)
-require(ggnewscale)
-require(gridExtra)
-require(dplyr)
-
-library(plotly)
-
-library(shiny)
-library(curl)
-
-packages_thijs <- c("GUILDS", "nLTT", "STEPCAM", "junctions", "GenomeAdmixR", "nodeSub", "simRestore", "treestats")
+packages_thijs <- c("GUILDS", "nLTT", "STEPCAM", "junctions",
+                    "GenomeAdmixR", "nodeSub", "simRestore", "treestats")
 packages_rampal <- c("DDD", "PBD", "SADISA", "DAMOCLES", "secsse")
-packages_richel <- c("babette", "beautier", "tracerer", "mauricer", "mcbette", "pirouette")
-packages_luis <- c("DAISIE", "DAISIEprep") #, "DAISIEmainland")
+packages_richel <- c("babette", "beautier", "tracerer", "mauricer",
+                     "mcbette", "pirouette")
+packages_luis <- c("DAISIE", "DAISIEprep")
 
 
 
-checkPackages <- c(packages_thijs, packages_rampal, packages_richel, packages_luis)
+checkPackages <- c(packages_thijs, packages_rampal,
+                   packages_richel, packages_luis)
 
-# starting_packages <- c("DDD", "secsse", "DAISIE", "treestats")
 starting_packages <- checkPackages
 
-colors_thijs <- ggpubr::get_palette("GnBu", k = 2*length(packages_thijs))[-c(1:length(packages_thijs))]
-colors_rampal <- ggpubr::get_palette("RdPu", k = 2*length(packages_rampal))[-c(1:length(packages_rampal))]
-colors_richel <- ggpubr::get_palette("OrRd", k = 2*length(packages_richel))[-c(1:length(packages_richel))]
-colors_luis   <- ggpubr::get_palette("BuGn", k = 2*length(packages_luis))[-c(1:length(packages_luis))]
-
-used_colors <- c(colors_thijs, colors_rampal, colors_richel, colors_luis)
-
-long_data <- cran_downloads(packages = checkPackages, from = "2010-01-01", to = lubridate::today() - 2)
-
-
+long_data <- cranlogs::cran_downloads(packages = checkPackages,
+                                      from = "2010-01-01",
+                                      to = lubridate::today() - 2)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -45,10 +27,22 @@ ui <- fluidPage(
 
   sidebarLayout(
     sidebarPanel(
-      radioButtons("set_thijs", "Thijs", choices = c("Show", "Hide"), selected = "Show", inline = TRUE),
-      radioButtons("set_rampal", "Rampal", choices = c("Show", "Hide"), selected = "Show", inline = TRUE),
-      radioButtons("set_luis", "Luis", choices = c("Show", "Hide"), selected = "Show", inline = TRUE),
-      radioButtons("set_richel", "Richel", choices = c("Show", "Hide"), selected = "Show", inline = TRUE),
+      radioButtons("set_thijs", "Thijs",
+                   choices = c("Show", "Hide"),
+                   selected = "Show",
+                   inline = TRUE),
+      radioButtons("set_rampal", "Rampal",
+                   choices = c("Show", "Hide"),
+                   selected = "Show",
+                   inline = TRUE),
+      radioButtons("set_luis", "Luis",
+                   choices = c("Show", "Hide"),
+                   selected = "Show",
+                   inline = TRUE),
+      radioButtons("set_richel", "Richel",
+                   choices = c("Show", "Hide"),
+                   selected = "Show",
+                   inline = TRUE),
       width = 2
     ),
 
@@ -69,6 +63,19 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+  require(ggplot2)
+  require(magrittr)
+
+  colors_thijs <- ggpubr::get_palette("GnBu",
+                                      k = 2*length(packages_thijs))[-c(1:length(packages_thijs))]
+  colors_rampal <- ggpubr::get_palette("RdPu",
+                                       k = 2*length(packages_rampal))[-c(1:length(packages_rampal))]
+  colors_richel <- ggpubr::get_palette("OrRd",
+                                       k = 2*length(packages_richel))[-c(1:length(packages_richel))]
+  colors_luis   <- ggpubr::get_palette("BuGn",
+                                       k = 2*length(packages_luis))[-c(1:length(packages_luis))]
+
+  used_colors <- c(colors_thijs, colors_rampal, colors_richel, colors_luis)
 
   output$mainPlot <- renderPlot({
 
@@ -79,26 +86,26 @@ server <- function(input, output) {
 
     long_data2 <-
       long_data %>%
-      group_by(package) %>%
-      arrange(date) %>%
-      mutate("cumsum" = cumsum(count))
+      dplyr::group_by(package) %>%
+      dplyr::arrange(date) %>%
+      dplyr::mutate("cumsum" = cumsum(count))
 
     add_group <- function(p1, group_name, used_colors) {
       p1 <- p1 +
-        new_scale_color() +
+        ggnewscale::new_scale_color() +
 
         geom_line(
           aes(x = date, y = cumsum, col = package),
-          filter(long_data2, group == group_name),
+          dplyr::filter(long_data2, group == group_name),
           lwd = 1.3) +
         scale_color_manual(values = used_colors) +
         labs(color = group_name) +
         guides(col = guide_legend(ncol = 2))
 
       long_data3 <- long_data2 %>%
-        filter(group == group_name) %>%
-        mutate("yval" = max(cumsum)) %>%
-        filter(date == max(date))
+        dplyr::filter(group == group_name) %>%
+        dplyr::mutate("yval" = max(cumsum)) %>%
+        dplyr::filter(date == max(date))
 
       p1 <- p1 +
         geom_text(data = long_data3,
@@ -130,24 +137,24 @@ server <- function(input, output) {
 
     long_data3 <-
       long_data %>%
-      group_by(package) %>%
-      mutate("total" = sum(count))
+      dplyr::group_by(package) %>%
+      dplyr::mutate("total" = sum(count))
 
     if (!use_thijs) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_thijs))
+        dplyr::filter(!(package %in% packages_thijs))
     }
     if (!use_rampal) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_rampal))
+        dplyr::filter(!(package %in% packages_rampal))
     }
     if (!use_luis) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_luis))
+        dplyr::filter(!(package %in% packages_luis))
     }
     if (!use_richel) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_richel))
+        dplyr::filter(!(package %in% packages_richel))
     }
 
     p1 <- p1 +
@@ -179,27 +186,27 @@ server <- function(input, output) {
     last_month <- lubridate::today() - 30
     long_data2 <-
       long_data %>%
-      filter(date >= last_month) %>%
-      group_by(package) %>%
-      arrange(date) %>%
-      mutate("cumsum" = cumsum(count))
+      dplyr::filter(date >= last_month) %>%
+      dplyr::group_by(package) %>%
+      dplyr::arrange(date) %>%
+      dplyr::mutate("cumsum" = cumsum(count))
 
     add_group <- function(p1, group_name, used_colors) {
       p1 <- p1 +
-        new_scale_color() +
+        ggnewscale::new_scale_color() +
 
         geom_line(
           aes(x = date, y = cumsum, col = package),
-          filter(long_data2, group == group_name),
+          dplyr::filter(long_data2, group == group_name),
           lwd = 1.3) +
         scale_color_manual(values = used_colors) +
         labs(color = group_name) +
         guides(col = guide_legend(ncol = 2))
 
       long_data3 <- long_data2 %>%
-        filter(group == group_name) %>%
-        mutate("yval" = max(cumsum)) %>%
-        filter(date == max(date))
+        dplyr::filter(group == group_name) %>%
+        dplyr::mutate("yval" = max(cumsum)) %>%
+        dplyr::filter(date == max(date))
 
       p1 <- p1 +
         geom_text(data = long_data3,
@@ -230,25 +237,25 @@ server <- function(input, output) {
 
     long_data3 <-
       long_data %>%
-      filter(date >= last_month) %>%
-      group_by(package) %>%
-      mutate("total" = sum(count))
+      dplyr::filter(date >= last_month) %>%
+      dplyr::group_by(package) %>%
+      dplyr::mutate("total" = sum(count))
 
     if (!use_thijs) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_thijs))
+        dplyr::filter(!(package %in% packages_thijs))
     }
     if (!use_rampal) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_rampal))
+        dplyr::filter(!(package %in% packages_rampal))
     }
     if (!use_luis) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_luis))
+        dplyr::filter(!(package %in% packages_luis))
     }
     if (!use_richel) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_richel))
+        dplyr::filter(!(package %in% packages_richel))
     }
 
     p1 <- p1 +
@@ -282,27 +289,27 @@ server <- function(input, output) {
 
     long_data2 <-
       long_data %>%
-      filter(date >= last_month) %>%
-      group_by(package) %>%
-      arrange(date) %>%
-      mutate("cumsum" = cumsum(count))
+      dplyr::filter(date >= last_month) %>%
+      dplyr::group_by(package) %>%
+      dplyr::arrange(date) %>%
+      dplyr::mutate("cumsum" = cumsum(count))
 
     add_group <- function(p1, group_name, used_colors) {
       p1 <- p1 +
-        new_scale_color() +
+        ggnewscale::new_scale_color() +
 
         geom_line(
           aes(x = date, y = cumsum, col = package),
-          filter(long_data2, group == group_name),
+          dplyr::filter(long_data2, group == group_name),
           lwd = 1.3) +
         scale_color_manual(values = used_colors) +
         labs(color = group_name) +
         guides(col = guide_legend(ncol = 2))
 
       long_data3 <- long_data2 %>%
-        filter(group == group_name) %>%
-        mutate("yval" = max(cumsum)) %>%
-        filter(date == max(date))
+        dplyr::filter(group == group_name) %>%
+        dplyr::mutate("yval" = max(cumsum)) %>%
+        dplyr::filter(date == max(date))
 
       p1 <- p1 +
         geom_text(data = long_data3,
@@ -333,25 +340,25 @@ server <- function(input, output) {
 
     long_data3 <-
       long_data %>%
-      filter(date >= last_month) %>%
-      group_by(package) %>%
-      mutate("total" = sum(count))
+      dplyr::filter(date >= last_month) %>%
+      dplyr::group_by(package) %>%
+      dplyr::mutate("total" = sum(count))
 
     if (!use_thijs) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_thijs))
+        dplyr::filter(!(package %in% packages_thijs))
     }
     if (!use_rampal) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_rampal))
+        dplyr::filter(!(package %in% packages_rampal))
     }
     if (!use_luis) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_luis))
+        dplyr::filter(!(package %in% packages_luis))
     }
     if (!use_richel) {
       long_data3 <- long_data3 %>%
-        filter(!(package %in% packages_richel))
+        dplyr::filter(!(package %in% packages_richel))
     }
 
     p2 <- long_data3 %>%
@@ -384,8 +391,8 @@ server <- function(input, output) {
       long_data$group[long_data$package %in% packages_richel] <- "Richel"
 
       long_data2 <- long_data %>%
-        filter(group == group_used) %>%
-        filter(count > 0)
+        dplyr::filter(group == group_used) %>%
+        dplyr::filter(count > 0)
 
       p1 <- long_data2 %>%
         ggplot(aes(x = reorder(package, count, FUN = median),
@@ -407,13 +414,16 @@ server <- function(input, output) {
     use_luis <- input$set_luis == "Show"
     use_richel <- input$set_richel == "Show"
 
-    if (use_thijs) plots[[length(plots) + 1]] <- add_plot("Thijs", colors_thijs)
-    if (use_rampal) plots[[length(plots) + 1]] <- add_plot("Rampal", colors_rampal)
-    if (use_luis) plots[[length(plots) + 1]] <- add_plot("Luis", colors_luis)
-    if (use_richel) plots[[length(plots) + 1]] <- add_plot("Richel", colors_richel)
+    if (use_thijs)
+      plots[[length(plots) + 1]] <- add_plot("Thijs", colors_thijs)
+    if (use_rampal)
+      plots[[length(plots) + 1]] <- add_plot("Rampal", colors_rampal)
+    if (use_luis)
+      plots[[length(plots) + 1]] <- add_plot("Luis", colors_luis)
+    if (use_richel)
+      plots[[length(plots) + 1]] <- add_plot("Richel", colors_richel)
 
-    # grid.arrange(plots, ncol = 1)
-    do.call("grid.arrange", c(plots, ncol = 2))
+    egg::ggarrange(plots = plots, ncol = 2)
   })
 }
 
